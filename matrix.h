@@ -40,7 +40,13 @@ void mxRot(ESMatrix *result, GLfloat angle, GLfloat rx, GLfloat ry, GLfloat rz);
 /* Translate deg to radians */
 GLfloat mxRad(GLfloat x);
 
+/* Apply matrix to a vector */
+void mxApply(GLfloat result[4], ESMatrix *matrix, GLfloat vector[4]);
+
 /* Norm of a vector */
 GLfloat mxNorm(GLfloat x, GLfloat y, GLfloat z);
+
+/* Transpose a matrix into itself or another one */
+void mxTranspose(ESMatrix *result, ESMatrix *a);
 
 #endif

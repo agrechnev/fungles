@@ -120,6 +120,30 @@ GLfloat mxRad(GLfloat x) {
 	return x*PI / 180.0f;
 }
 
+/* Apply matrix to a vector */
+void mxApply(GLfloat result[4], ESMatrix *matrix, GLfloat vector[4]) {
+	int i, j;
+
+	for (i = 0; i < 4; i++) {
+		result[i] = 0.0f;
+
+		for (j = 0; j < 4; j++) result[i] += matrix->m[i][j] * vector[j];
+	}
+}
+
+/* Transpose a matrix into itself or another one */
+void mxTranspose(ESMatrix *result, ESMatrix *a) {
+	ESMatrix tmp;
+	int i, j;
+
+	for (i = 0; i < 4; i++)
+		for (j = 0; j < 4; j++)
+			tmp.m[i][j] = a->m[j][i];
+
+	// Copy it to where we want it
+	memcpy(result, &tmp, sizeof(ESMatrix));
+}
+
 /* Create the lookAt matrix - later */
 void lookAt(ESMatrix *result,
 	float posX, float posY, float posZ,
@@ -128,3 +152,5 @@ void lookAt(ESMatrix *result,
 
 
 }
+
+

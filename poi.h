@@ -13,16 +13,30 @@
 typedef struct Poi{
 	GLfloat x, y, z; // Coordinates of the center
 
-	GLfloat width, height; // Size of the poin in opengl coordinates
+	GLfloat origY; // Original y coordinate, doesn't changed if POI's moved because of eclipse
+
+	GLfloat width, height; // Size of the POI in opengl coordinates
 	GLfloat normDist; // Normal distance to camera (give scale 1.0 if pois are scaled)
 
 	VaoObject vaoObject; // VAO object for this poi
 
+	// Texture/Color
 	int useTexture; // Use texture or not (boolean)
-	
 
 	GLuint texture; // Texture ID if the texture is used
 	GLfloat colorRGBA[4]; // RGBA Color if color is used
+
+	// Occultation (eclipse)- related stuff
+	int isEclipsed; // Boolean, true = eclipsed
+	GLfloat dist; // Distance to the camera on last draw
+
+
+	// Data set up on Draw to test for occultation (one POI obscuring another)
+	// Corners before transformation
+	GLfloat corners[4][4];
+
+    // min and max viewport x,y coordinates after all transformations
+	GLfloat minX, maxX, minY, maxY;
 
 } Poi;
 
@@ -55,12 +69,20 @@ void createPOIcolor(Poi *poi,
  * Camera position is needed for distance (scaling)
  * camera direction (xz components only, not normalized) are needed for rotation
  */
-void drawPOI(Poi *poi, UniformCache *uniformCache, GLfloat camX, GLfloat camY, GLfloat camZ,
+void drawPOI(Poi *poi, UniformCache *uniformCache, ESMatrix *projView,
+	GLfloat camX, GLfloat camY, GLfloat camZ,
 	GLfloat dirX, GLfloat dirZ);
 
 /*
 * Delete POI object
 */
 void deletePOI(Poi *poi);
+
+/*
+* Check all POIs from a single POI array for occultation(eclipse)
+* Set or clear the occultation flag when appropriate
+* This should be ran after ALL POIs are drawn !
+*/
+void occultPOI(Poi poi[], int nPois);
 
 #endif

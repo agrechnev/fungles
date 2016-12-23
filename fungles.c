@@ -228,14 +228,27 @@ void drawModel(ESContext *esContext) {
 	// transpose = false
 	glUniformMatrix4fv(glGetUniformLocation(userData->program, "proj"), 1, GL_FALSE, (const GLfloat*)&proj.m);
 
+
+	// We don't need matrices proj and view anymore
+	// Transpose them to normal (row-wise) notation
+	mxTranspose(&proj, &proj);
+	mxTranspose(&view, &view);
+
+	ESMatrix projView; //proj*view, needed for occultation
+	mxMul(&projView, &proj, &view);
+
 	// Draw POIs
 	for (int poiIndex = 0; poiIndex < userData->numPois; poiIndex++) {
-		drawPOI(&(userData->pois[poiIndex]), &(userData->uniformCache),
+		drawPOI(&(userData->pois[poiIndex]), &(userData->uniformCache), &projView,
 			userData->cameraX, userData->cameraY, userData->cameraZ,                   // Camera pos for distance
 			userData->lookX - userData->cameraX, userData->lookZ - userData->cameraZ); // Camera direction for rotation
 	}
 
-	// Draw POIs and axes
+	// Check for occultation=eclipse=POI behind another
+	// Sets/clears the isEclipsed flag in each POI
+	occultPOI(userData->pois, userData->numPois);
+
+	// Draw axes
 	if (FUNGLES_DRAW_AXES) drawAxes(userData);
 }
 
@@ -260,14 +273,16 @@ void draw(ESContext *esContext)
 
 	// Set camera movement
 
+	GLfloat speed = 1.0;
+
 	// Little tilt around the Z axis in the XZ plane
-	GLfloat angle = 0.4*sinf(niceTime);
+	GLfloat angle = 0.4f*sinf(niceTime*speed);
 
 	userData->cameraX = sinf(angle) * 10;
 	userData->cameraZ = cosf(angle) * 10;
 
 	// Some slow movement around Y axis
-	userData->cameraY = 1.0f*(sinf(niceTime*sqrtf(2.0f)/4)+1);
+	userData->cameraY = 1.0f*(sinf(niceTime*speed*sqrtf(2.0f)/4)+1);
 
 	// Camera looks at (0, 0, 0) for now
 	userData->lookX = 0.0f;
