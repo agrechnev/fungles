@@ -7,10 +7,12 @@ They must be local arrays, or pre-allocated
 Note: here I use matrix in normal notation,
 so they must be either loaded with transpose=GL_TRUE (is it even safe ?)
 or transposed
+
+Probably I'll change this later to the totally transposed syntax
 */
 
 #include <math.h>
-
+#include <stdio.h>
 
 
 #include "esUtil.h"
@@ -145,7 +147,7 @@ void mxTranspose(ESMatrix *result, ESMatrix *a) {
 }
 
 /* Create the lookAt matrix - later */
-void lookAt(ESMatrix *result,
+void mxLookAt(ESMatrix *result,
 	float posX, float posY, float posZ,
 	float lookAtX, float lookAtY, float lookAtZ,
 	float upX, float upY, float upZ) {

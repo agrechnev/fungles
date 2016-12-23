@@ -155,6 +155,8 @@ void setMinMaxXY(Poi *poi, ESMatrix *tran) {
 
 	int i; // Loop index over corners
 
+
+	GLfloat x, y;
 	GLfloat x1, x2, y1, y2; // min max values
 
 	
@@ -162,10 +164,15 @@ void setMinMaxXY(Poi *poi, ESMatrix *tran) {
 		// Apply the complete transformation matrix to this corner
 		mxApply(viewportCorner, tran, poi->corners[i]); 
 
-		if (i == 0 || viewportCorner[0] < x1) x1 = viewportCorner[0]; // min X
-		if (i == 0 || viewportCorner[0] > x2) x2 = viewportCorner[0]; // max X
-		if (i == 0 || viewportCorner[1] < y1) y1 = viewportCorner[1]; // min Y
-		if (i == 0 || viewportCorner[1] > y2) y2 = viewportCorner[1]; // max Y
+		// Don't forget the perspective division !!!
+		// I spent a few very unhappy hours because I forgot that !!!
+		x = viewportCorner[0] / viewportCorner[3];
+		y = viewportCorner[1] / viewportCorner[3];
+
+		if (i == 0 || x < x1) x1 = x; // min X
+		if (i == 0 || x > x2) x2 = x; // max X
+		if (i == 0 || y < y1) y1 = y; // min Y
+		if (i == 0 || y > y2) y2 = y; // max Y
 	}
 	
 	poi->minX = x1;
@@ -207,6 +214,12 @@ void drawPOI(Poi *poi, UniformCache *uniformCache, ESMatrix *projView,
 	// Set up the final model
 	glUniformMatrix4fv(uniformCache->model, 1, GL_TRUE, (const GLfloat*)&model.m);
 
+
+	// Set up min and max viewport X, Y
+	ESMatrix tran;
+	mxMul(&tran, projView, &model); // The total transformation matrix like in the vertex shader
+	setMinMaxXY(poi, &tran);
+
 	// Set up texture or color
 
 	// Black eclipsed POIs ?
@@ -229,12 +242,7 @@ void drawPOI(Poi *poi, UniformCache *uniformCache, ESMatrix *projView,
 
 	// Draw the VAO object
 	drawVAO(&(poi->vaoObject));
-
-	// Finsihed drawing? Not yet, now it's time to check for occultation
-	// We set up min and max viewport X, Y
-	ESMatrix tran;
-	mxMul(&tran, projView, &model); // The total transformation matrix like in the vertex shader
-	setMinMaxXY(poi, &tran);
+	
 }
 
 /*
@@ -268,8 +276,8 @@ void occultPOI(Poi poi[], int nPois){
 			if (poi[i2].dist > poi[i1].dist) continue; // Farther away from camera: not interesting
 
 			// Check if both X and Y intervals overlap
-			if ((poi[i1].minX < poi[i2].maxX && poi[i2].minX < poi[i1].maxX) &&
-				(poi[i1].minY < poi[i2].maxY && poi[i2].minY < poi[i1].maxY))
+			if (poi[i1].minX < poi[i2].maxX && poi[i2].minX < poi[i1].maxX && 
+				poi[i1].minY < poi[i2].maxY && poi[i2].minY < poi[i1].maxY )
 			{
 				poi[i1].isEclipsed = TRUE; // i1 is eclipsed by i2
 				break; // break the inner loop

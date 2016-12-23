@@ -273,7 +273,7 @@ void draw(ESContext *esContext)
 
 	// Set camera movement
 
-	GLfloat speed = 1.0;
+	GLfloat speed = 1.0f;
 
 	// Little tilt around the Z axis in the XZ plane
 	GLfloat angle = 0.4f*sinf(niceTime*speed);
