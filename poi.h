@@ -50,11 +50,13 @@ void createPOIcolor(Poi *poi,
 	GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 
 /*
-* Draw a POI with current GL program, view and projection
-* This routine sets up texture/color and model matrix
-* program is needed for uniform locations
-*/
-void drawPOI(Poi *poi, UniformCache *uniformCache);
+ * Draw a POI with current GL program, view and projection
+ * This routine sets up texture/color and model matrix
+ * Camera position is needed for distance (scaling)
+ * camera direction (xz components only, not normalized) are needed for rotation
+ */
+void drawPOI(Poi *poi, UniformCache *uniformCache, GLfloat camX, GLfloat camY, GLfloat camZ,
+	GLfloat dirX, GLfloat dirZ);
 
 /*
 * Delete POI object

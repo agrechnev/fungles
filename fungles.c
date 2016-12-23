@@ -15,6 +15,9 @@ Fun with OpenGL ES */
 
 #include "userdata.h"
 
+// Draw axes or not ?
+#define FUNGLES_DRAW_AXES TRUE
+
 
 /////////////////////////////////////////////////////
 // INIT SECTION
@@ -61,78 +64,7 @@ void initModel(UserData *userData) {
 		1.0f, 1.0f, 10.0f, // width height normDist
 		1.0f, 0.0f, 1.0f, 1.0f);   // RGBA purple
 
-	// Set vertices and VAO -- OLD
-	// Vertex XYZ + texture ST
-	GLfloat vVertices[] = {
-		-0.5f,  0.5f, 0.0f,  0.0f, 3.0f,
-		-0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
-		0.5f, -0.5f, 0.0f,  3.0f, 0.0f,
-		-0.5f,  0.5f, 0.0f,  0.0f, 3.0f,
-		0.5f,  0.5f, 0.0f,  3.0f, 3.0f,
-		0.5f, -0.5f, 0.0f,  3.0f, 0.0f
-	};
-
-	// Vertices for a cube
-	GLfloat cubeVertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-	};
-
-	// Indices
-	GLuint indices[] = {
-		0, 1, 2,  // Triangle 1
-		3, 4, 5  // Triangle 2
-	};
-
-	// Set up VAO from vertices (with EBO from indices)
-	// createVAO(&(userData->vao1), vVertices, sizeof(vVertices), indices, sizeof(indices), VAO_XYZST);
-
-	// Set up VAO from vertices without EBO 
-	createVAO(&(userData->vao1), cubeVertices, sizeof(cubeVertices), NULL, 0, VAO_XYZST);
-
-	printf("Model: nDrawElements = %d \n", userData->vao1.nDrawElements);
-
 	
-	userData->tex = createRGBTexture(pixels, 2, 2);
 }
 
 //-------------------------------------------
@@ -155,7 +87,6 @@ void initAxes(UserData *userData) {
 	};
 
 	createVAO(&(userData->axisVaoX), verticesX, sizeof(verticesX), NULL, 0, VAO_XYZ);
-	printf("Axis X: nDrawElements = %d \n", userData->axisVaoX.nDrawElements);
 
 	// Y
 	GLfloat verticesY[] = {
@@ -168,6 +99,7 @@ void initAxes(UserData *userData) {
 		0.0f,  0.0f,  0.05f,
 		0.0f,  0.0f, -0.05f
 	};
+
 	createVAO(&(userData->axisVaoY), verticesY, sizeof(verticesY), NULL, 0, VAO_XYZ);
 
 	// Z
@@ -189,7 +121,7 @@ void initAxes(UserData *userData) {
 /*
  * Initialize userData, create our model etc.
  */
-int Init(ESContext *esContext) {
+int init(ESContext *esContext) {
 	UserData *userData = esContext->userData;
 
 	// Init our model (graphical objects)
@@ -242,7 +174,7 @@ void drawAxes(UserData *userData) {
 
 //-------------------------------------------
 /*
- * Draw model and axes
+ * Draw POIs and axes
  */
 void drawModel(ESContext *esContext) {
 	UserData *userData = esContext->userData;
@@ -262,11 +194,12 @@ void drawModel(ESContext *esContext) {
 	// For historical reasons many people avoid true,
 	// But I don't think it matters nowadays
 
+	// For now I use esTransform.c for lookAt and perspective (view+proj)
+	// And my matrix.h for model operations
+	// Change in the future
 
-	// Model
-	ESMatrix model, tmpmat;
-
-	mxOne(&model); // Safety plug
+	
+	// Matrix examples
 
 	//mxRot(&tmpmat, mxRad(34.0f)*niceTime, 0.5f, 1.0f, 0.0f);
 
@@ -274,19 +207,15 @@ void drawModel(ESContext *esContext) {
 	//mxMul(&model, &model, &tmpmat);
 
 	// transpose = true
-	glUniformMatrix4fv(glGetUniformLocation(userData->program, "model"), 1, GL_TRUE, (const GLfloat*)&model.m);
+	// glUniformMatrix4fv(glGetUniformLocation(userData->program, "model"), 1, GL_TRUE, (const GLfloat*)&model.m);
 
 	// View
 	ESMatrix view;
 	esMatrixLoadIdentity(&view);
-
-
-
 	esMatrixLookAt(&view,
 		userData->cameraX, userData->cameraY, userData->cameraZ,   // camera position
-		0.0f, 0.0f, 0.0f,    // look at position
+		userData->lookX, userData->lookY, userData->lookZ,    // look at position
 		0.0f, 1.0f, 0.0f);     // up vector 
-
 
 	// transpose = false
 	glUniformMatrix4fv(glGetUniformLocation(userData->program, "view"), 1, GL_FALSE, (const GLfloat*) &view.m);
@@ -294,33 +223,27 @@ void drawModel(ESContext *esContext) {
 	// Projection
 	ESMatrix proj;
 	esMatrixLoadIdentity(&proj);
-
 	esPerspective(&proj, 45.0f, (GLfloat)esContext->width / (GLfloat)esContext->height, 0.1f, 100.0f);
-
 
 	// transpose = false
 	glUniformMatrix4fv(glGetUniformLocation(userData->program, "proj"), 1, GL_FALSE, (const GLfloat*)&proj.m);
 
-	// Draw the model
-	glUniform1i(glGetUniformLocation(userData->program, "useTexture"), GL_TRUE); // Use textures
-	// drawVAO(&(userData->vao1));
-
 	// Draw POIs
 	for (int poiIndex = 0; poiIndex < userData->numPois; poiIndex++) {
-		drawPOI(&(userData->pois[poiIndex]), &(userData->uniformCache));
+		drawPOI(&(userData->pois[poiIndex]), &(userData->uniformCache),
+			userData->cameraX, userData->cameraY, userData->cameraZ,                   // Camera pos for distance
+			userData->lookX - userData->cameraX, userData->lookZ - userData->cameraZ); // Camera direction for rotation
 	}
 
-	// Draw axes
-	drawAxes(userData);
+	// Draw POIs and axes
+	if (FUNGLES_DRAW_AXES) drawAxes(userData);
 }
-
-
 
 //-------------------------------------------
 /*
  * Draw callback, aka "the game loop body"
  */
-void Draw(ESContext *esContext)
+void draw(ESContext *esContext)
 {
 	UserData *userData = esContext->userData;
 
@@ -346,6 +269,11 @@ void Draw(ESContext *esContext)
 	// Some slow movement around Y axis
 	userData->cameraY = 1.0f*(sinf(niceTime*sqrtf(2.0f)/4)+1);
 
+	// Camera looks at (0, 0, 0) for now
+	userData->lookX = 0.0f;
+	userData->lookY = 0.0f;
+	userData->lookZ = 0.0f;
+
 	// Draw model and axes
 	drawModel(esContext);
 
@@ -355,7 +283,7 @@ void Draw(ESContext *esContext)
 //  SHUTDOWN + MAIN SECTION
 ///////////////////////////////////
 
-void Shutdown(ESContext *esContext)
+void shutdown(ESContext *esContext)
 {
 	UserData *userData = esContext->userData;
 
@@ -392,13 +320,13 @@ int esMain(ESContext *esContext)
 	esCreateWindow(esContext, "Dark Elf OpenGL ES", 1000, 800, ES_WINDOW_RGB);
 
 	// Initialize everything
-	if (!Init(esContext))
+	if (!init(esContext))
 	{
 		return GL_FALSE;
 	}
 
-	esRegisterShutdownFunc(esContext, Shutdown);
-	esRegisterDrawFunc(esContext, Draw);
+	esRegisterShutdownFunc(esContext, shutdown);
+	esRegisterDrawFunc(esContext, draw);
 
 	return GL_TRUE;
 }

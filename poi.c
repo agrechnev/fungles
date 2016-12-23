@@ -4,6 +4,8 @@
  * Each poi object includes (basic) center coordinates, size and (texture or color)
  */
 
+#include <math.h>
+
 #include "esUtil.h"
 
 #include "rgbtex.h"
@@ -105,18 +107,28 @@ void createPOIcolor(Poi *poi,
 /*
  * Draw a POI with current GL program, view and projection
  * This routine sets up texture/color and model matrix
- * program is needed for uniform locations
+ * Camera position is needed for distance (scaling)
+ * camera direction (xz components only, not normalized) are needed for rotation
  */
-void drawPOI(Poi *poi, UniformCache *uniformCache) {
+void drawPOI(Poi *poi, UniformCache *uniformCache, GLfloat camX, GLfloat camY, GLfloat camZ,
+	GLfloat dirX, GLfloat dirZ) {
 
 	// Set up the model matrix (rotate+scale+translate)
-	ESMatrix model;
+	ESMatrix model, tmpMat;
 	
+	// Scale
+	// Distance to the camera divided by normal distance
+	GLfloat scale = mxNorm(camX - poi->x, camY - poi->y, camZ - poi->z) / poi->normDist;
+	mxScale(&model, scale, scale, scale);
 
 	// Rotate
+	GLfloat angle = atan2(dirX, dirZ); // Angle in radians
+	mxRot(&tmpMat, angle, 0.0f, 1.0f, 0.0f);
+	mxMul(&model, &tmpMat, &model);
 
 	// Translate
-	mxTran(&model, poi->x, poi->y, poi->z);
+	mxTran(&tmpMat, poi->x, poi->y, poi->z);
+	mxMul(&model, &tmpMat, &model);
 
 	// Set up the final model
 	glUniformMatrix4fv(uniformCache->model, 1, GL_TRUE, (const GLfloat*)&model.m);

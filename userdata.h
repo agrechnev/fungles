@@ -8,6 +8,10 @@
 
 #include "uniformcache.h"
 
+// Maximal number of POIs
+// Change to malloc if you wish
+#define USERDATA_MAX_POIS  20 
+
 typedef struct UserData
 {
 
@@ -23,7 +27,8 @@ typedef struct UserData
 
 				 // POIs, they include VAOs, textures as needed
 	int numPois; // Number of pois
-	Poi pois[10]; // The POIs
+	
+	Poi pois[USERDATA_MAX_POIS]; // The POIs
 
     // Blender-like Axes (painted by me) data XYZ=RGB
 	// I could have used single vao+rotations, but it's more clear this way
@@ -31,8 +36,10 @@ typedef struct UserData
 
 	//-------------
 	// Camera settings
-	// Camera origin
+	// Camera position
 	GLfloat cameraX, cameraY, cameraZ;
+	// Camera: lookAt point
+	GLfloat lookX, lookY, lookZ;
 
 } UserData;
 
