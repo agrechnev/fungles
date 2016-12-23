@@ -1,4 +1,5 @@
-/* Create VAO, this includes creating vertices, VBO, EBO */
+/* By Oleksiy Grechnyev 2016
+Create VAO, this includes creating vertices, VBO, EBO */
 #ifndef VAO_H
 #define VAO_H
 

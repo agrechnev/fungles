@@ -1,6 +1,7 @@
 /* By Oleksiy Grechnyev 2016
 Fun with OpenGL ES */
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <math.h>
 
@@ -10,21 +11,9 @@ Fun with OpenGL ES */
 #include "vao.h"
 #include "rgbtex.h"
 #include "matrix.h"
+#include "poi.h"
 
-typedef struct
-{
-	// Model data
-	GLuint program; // Program
-	VaoObject vao1; // Vertices
-	GLuint tex;  // Texture
-
-
-	// Axes (painted by me) data
-
-	// I could have used translation, but it's more clear this way
-	VaoObject axisVaoX, axisVaoY, axisVaoZ;
-
-} UserData;
+#include "userdata.h"
 
 
 /////////////////////////////////////////////////////
@@ -37,10 +26,42 @@ Initialize graphical model (sans axes)
 */
 void initModel(UserData *userData) {
 
-	// Create the program
+	// Create EGL program + shaders
 	userData->program = createShaderProgram("shaders/s.vs", "shaders/s.frag");
 
-	// Set vertices and VAO
+	// Create uniform location cache
+	createUniformCache(&(userData->uniformCache), userData->program);
+
+	// Set up POIs
+
+	// Set up a trivial texture
+	// 2 x 2 Image, 3 bytes per pixel (R, G, B)
+	GLubyte pixels[4 * 3] =
+	{
+		255, 0, 0, // Red
+		0, 255, 0, // Green
+		0, 0, 255, // Blue
+		255, 255, 0 // Yellow
+	};
+
+	userData->numPois = 3;
+	createPOItexture(&(userData->pois[0]),
+		            0.5f, 0.0f, -0.1f, // X Y Z
+		            1.0f, 1.0f, 10.0f, // width height normDist
+		            pixels, 2, 2);   // texture
+
+	createPOIcolor(&(userData->pois[1]),
+		-0.5f, 0.5f, 2.0f, // X Y Z
+		1.0f, 1.0f, 10.0f, // width height normDist
+		1.0f, 0.5f, 0.0f, 1.0f);   // RGBA orange
+
+
+	createPOIcolor(&(userData->pois[2]),
+		1.0f, 1.0f, -4.0f, // X Y Z
+		1.0f, 1.0f, 10.0f, // width height normDist
+		1.0f, 0.0f, 1.0f, 1.0f);   // RGBA purple
+
+	// Set vertices and VAO -- OLD
 	// Vertex XYZ + texture ST
 	GLfloat vVertices[] = {
 		-0.5f,  0.5f, 0.0f,  0.0f, 3.0f,
@@ -110,15 +131,7 @@ void initModel(UserData *userData) {
 
 	printf("Model: nDrawElements = %d \n", userData->vao1.nDrawElements);
 
-	// Set up a trivial texture
-	// 2 x 2 Image, 3 bytes per pixel (R, G, B)
-	GLubyte pixels[4 * 3] =
-	{
-		255, 0, 0, // Red
-		0, 255, 0, // Green
-		0, 0, 255, // Blue
-		255, 255, 0 // Yellow
-	};
+	
 	userData->tex = createRGBTexture(pixels, 2, 2);
 }
 
@@ -133,12 +146,12 @@ void initAxes(UserData *userData) {
 	GLfloat verticesX[] = {
 		// Triangle 1
 	    3.0f,  0.0f,  0.0f,
-	    0.0f,  0.1f,  0.0f,
-	    0.0f, -0.1f,  0.0f,
+	    0.0f,  0.05f,  0.0f,
+	    0.0f, -0.05f,  0.0f,
 		// Triangle 2
 	    3.0f,  0.0f,  0.0f,
-	    0.0f,  0.0f,  0.1f,
-        0.0f,  0.0f, -0.1f
+	    0.0f,  0.0f,  0.05f,
+        0.0f,  0.0f, -0.05f
 	};
 
 	createVAO(&(userData->axisVaoX), verticesX, sizeof(verticesX), NULL, 0, VAO_XYZ);
@@ -148,12 +161,12 @@ void initAxes(UserData *userData) {
 	GLfloat verticesY[] = {
 		// Triangle 1
 		0.0f,  3.0f,  0.0f,
-		0.1f,  0.0f,  0.0f,
-	   -0.1f,  0.0f,  0.0f,
+		0.05f,  0.0f,  0.0f,
+	   -0.05f,  0.0f,  0.0f,
 		// Triangle 2
 		0.0f,  3.0f,  0.0f,
-		0.0f,  0.0f,  0.1f,
-		0.0f,  0.0f, -0.1f
+		0.0f,  0.0f,  0.05f,
+		0.0f,  0.0f, -0.05f
 	};
 	createVAO(&(userData->axisVaoY), verticesY, sizeof(verticesY), NULL, 0, VAO_XYZ);
 
@@ -161,12 +174,12 @@ void initAxes(UserData *userData) {
 	GLfloat verticesZ[] = {
 		// Triangle 1
 		0.0f,  0.0f,  3.0f,
-		0.1f,  0.0f,  0.0f,
-       -0.1f,  0.0f,  0.0f,
+		0.05f,  0.0f,  0.0f,
+       -0.05f,  0.0f,  0.0f,
 		// Triangle 2
 		0.0f,  0.0f,  3.0f,
-		0.0f,  0.1f,  0.0f,
-		0.0f, -0.1f,  0.0f
+		0.0f,  0.05f,  0.0f,
+		0.0f, -0.05f,  0.0f
 	};
 
 	createVAO(&(userData->axisVaoZ), verticesZ, sizeof(verticesZ), NULL, 0, VAO_XYZ);
@@ -201,11 +214,15 @@ int Init(ESContext *esContext) {
 
 //-------------------------------------------
 /*
-* Draw axes
+* Draw axes with current view and proj, ignoring model
 */
-
 void drawAxes(UserData *userData) {
 	
+	// Set up "model" matrix to unity, leaving view and proj untouched
+	ESMatrix model;
+	mxOne(&model); // Identity
+	glUniformMatrix4fv(glGetUniformLocation(userData->program, "model"), 1, GL_TRUE, (const GLfloat*) &model.m);
+
 	glUniform1i(glGetUniformLocation(userData->program, "useTexture"), GL_FALSE); // Use color, not textures
 	// Draw the axes with respective color
 	GLuint acLoc = glGetUniformLocation(userData->program, "myColor");
@@ -227,7 +244,7 @@ void drawAxes(UserData *userData) {
 /*
  * Draw model and axes
  */
-void drawModel(ESContext *esContext, GLfloat niceTime) {
+void drawModel(ESContext *esContext) {
 	UserData *userData = esContext->userData;
 
 	// Use the program object
@@ -257,26 +274,22 @@ void drawModel(ESContext *esContext, GLfloat niceTime) {
 	//mxMul(&model, &model, &tmpmat);
 
 	// transpose = true
-	glUniformMatrix4fv(glGetUniformLocation(userData->program, "model"), 1, GL_TRUE, &model.m);
+	glUniformMatrix4fv(glGetUniformLocation(userData->program, "model"), 1, GL_TRUE, (const GLfloat*)&model.m);
 
 	// View
 	ESMatrix view;
 	esMatrixLoadIdentity(&view);
 
-	GLfloat camX = cos(niceTime) * 10;
-	GLfloat camZ = sin(niceTime) * 10;
 
-	// camX = 0.1;
-	// camZ = 10.0f;
 
 	esMatrixLookAt(&view,
-		camX, 0.0f, camZ,   // camera position
+		userData->cameraX, userData->cameraY, userData->cameraZ,   // camera position
 		0.0f, 0.0f, 0.0f,    // look at position
 		0.0f, 1.0f, 0.0f);     // up vector 
 
 
 	// transpose = false
-	glUniformMatrix4fv(glGetUniformLocation(userData->program, "view"), 1, GL_FALSE, &view.m);
+	glUniformMatrix4fv(glGetUniformLocation(userData->program, "view"), 1, GL_FALSE, (const GLfloat*) &view.m);
 
 	// Projection
 	ESMatrix proj;
@@ -286,11 +299,16 @@ void drawModel(ESContext *esContext, GLfloat niceTime) {
 
 
 	// transpose = false
-	glUniformMatrix4fv(glGetUniformLocation(userData->program, "proj"), 1, GL_FALSE, &proj.m);
+	glUniformMatrix4fv(glGetUniformLocation(userData->program, "proj"), 1, GL_FALSE, (const GLfloat*)&proj.m);
 
 	// Draw the model
 	glUniform1i(glGetUniformLocation(userData->program, "useTexture"), GL_TRUE); // Use textures
-	drawVAO(&(userData->vao1));
+	// drawVAO(&(userData->vao1));
+
+	// Draw POIs
+	for (int poiIndex = 0; poiIndex < userData->numPois; poiIndex++) {
+		drawPOI(&(userData->pois[poiIndex]), &(userData->uniformCache));
+	}
 
 	// Draw axes
 	drawAxes(userData);
@@ -300,7 +318,7 @@ void drawModel(ESContext *esContext, GLfloat niceTime) {
 
 //-------------------------------------------
 /*
- * Draw callback
+ * Draw callback, aka "the game loop body"
  */
 void Draw(ESContext *esContext)
 {
@@ -317,11 +335,20 @@ void Draw(ESContext *esContext)
 	// Get the time as float in seconds since an arbitrary origin
 	GLfloat niceTime = (GLfloat)clock() / CLOCKS_PER_SEC;
 
-	// Draw model and axes
-	drawModel(esContext, niceTime);
+	// Set camera movement
 
-	// Draw axes
-	//drawAxes(esContext, niceTime);
+	// Little tilt around the Z axis in the XZ plane
+	GLfloat angle = 0.4*sinf(niceTime);
+
+	userData->cameraX = sinf(angle) * 10;
+	userData->cameraZ = cosf(angle) * 10;
+
+	// Some slow movement around Y axis
+	userData->cameraY = 1.0f*(sinf(niceTime*sqrtf(2.0f)/4)+1);
+
+	// Draw model and axes
+	drawModel(esContext);
+
 }
 
 /////////////////////////////////////////////////////
@@ -332,25 +359,39 @@ void Shutdown(ESContext *esContext)
 {
 	UserData *userData = esContext->userData;
 
-
 	// Clean up our buffers and stuff
 	// Delete VAO
 	deleteVAO(&(userData->vao1));
 
+	// Delete Axes
+	deleteVAO(&(userData->axisVaoX));
+	deleteVAO(&(userData->axisVaoY));
+	deleteVAO(&(userData->axisVaoZ));
+
+	// Delete POIs
+	for (int poiIndex = 0; poiIndex < userData->numPois; poiIndex++) {
+		deletePOI(&(userData->pois[poiIndex]));
+	}
+
 	// Delete program
 	glDeleteProgram(userData->program);
+
+	// Delete user data -- does not work for some mysterious reason !
+	// free(userData); 
 }
 
 /*
- ENTRY POINT 
- This is called by the architecture-dependent container such as esUtil_win32.c
-*/
+ * ENTRY POINT 
+ * This is called by the architecture-dependent container such as esUtil_win32.c 
+ */
 int esMain(ESContext *esContext)
 {
+	// Allocate user data
 	esContext->userData = malloc(sizeof(UserData));
 
-	esCreateWindow(esContext, "Dark Elf OpenGL ES", 800, 600, ES_WINDOW_RGB);
+	esCreateWindow(esContext, "Dark Elf OpenGL ES", 1000, 800, ES_WINDOW_RGB);
 
+	// Initialize everything
 	if (!Init(esContext))
 	{
 		return GL_FALSE;

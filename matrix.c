@@ -120,8 +120,8 @@ GLfloat mxRad(GLfloat x) {
 	return x*PI / 180.0f;
 }
 
-/* Create the lookAt matrix*/
-GLfloat lookAt(ESMatrix *result,
+/* Create the lookAt matrix - later */
+void lookAt(ESMatrix *result,
 	float posX, float posY, float posZ,
 	float lookAtX, float lookAtY, float lookAtZ,
 	float upX, float upY, float upZ) {
