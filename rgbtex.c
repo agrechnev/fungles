@@ -2,7 +2,13 @@
 Create a simple RGB texture from an array
 I am too lazy to load files now */
 
+
+
 #include "esUtil.h"
+
+// Note: for sharp texture image
+// replace GL_LINEAR with GL_NEAREST
+#define MY_INTERPOLATION  GL_LINEAR
 
 GLuint createRGBTexture(GLubyte *pixels, GLsizei width, GLsizei height) {
 	GLuint textureId;
@@ -26,10 +32,8 @@ GLuint createRGBTexture(GLubyte *pixels, GLsizei width, GLsizei height) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Set the filtering mode
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-		GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-		GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, MY_INTERPOLATION);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, MY_INTERPOLATION);
 
 	// Unbind the texture object for now
 	glBindTexture(GL_TEXTURE_2D, 0);

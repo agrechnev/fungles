@@ -59,6 +59,7 @@ void initPOI(Poi *poi,
 
 	// More data
 	poi->isEclipsed = FALSE; // To start with
+	poi->lastEclipsed = FALSE;
 	poi->origY = y;
 
 	// Set corners
@@ -224,7 +225,7 @@ void drawPOI(Poi *poi, UniformCache *uniformCache, ESMatrix *projView,
 
 	// Black eclipsed POIs ?
 	// TRUE for test, FALSE for production
-	const int blackEclipsed = TRUE; 
+	const int blackEclipsed = FALSE; 
 
 	if (blackEclipsed && poi->isEclipsed) {
 		// Black eclipsed POI, overrides texture
@@ -266,7 +267,7 @@ void occultPOI(Poi poi[], int nPois){
 		poi[i1].isEclipsed = FALSE; // To start with
 
 		// Check if the POI is completely invisble -- skip the check then and continue the outer loop
-		// if (poi[i1].maxX< -1.0f || poi[i1].minX > 1.0f || poi[i1].maxY< -1.0f || poi[i1].minY > 1.0f) continue;
+		if (poi[i1].maxX< -1.0f || poi[i1].minX > 1.0f || poi[i1].maxY< -1.0f || poi[i1].minY > 1.0f) continue;
 
 		// Go here if POI is visible
 		// Inner loop over all POIs i2 which might eclipse our POI i1
@@ -275,9 +276,16 @@ void occultPOI(Poi poi[], int nPois){
 
 			if (poi[i2].dist > poi[i1].dist) continue; // Farther away from camera: not interesting
 
+			// Set region of POI i1 to check for eclipse
+			// The upper 1/3 at present
+			GLfloat minX = poi[i1].minX;
+			GLfloat maxX = poi[i1].maxX;
+			GLfloat minY = (poi[i1].minY + 2*poi[i1].maxY)/3.0f;
+			GLfloat maxY = poi[i1].maxY;
+
 			// Check if both X and Y intervals overlap
-			if (poi[i1].minX < poi[i2].maxX && poi[i2].minX < poi[i1].maxX && 
-				poi[i1].minY < poi[i2].maxY && poi[i2].minY < poi[i1].maxY )
+			if (minX < poi[i2].maxX && poi[i2].minX < maxX && 
+				minY < poi[i2].maxY && poi[i2].minY < maxY )
 			{
 				poi[i1].isEclipsed = TRUE; // i1 is eclipsed by i2
 				break; // break the inner loop

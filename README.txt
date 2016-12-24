@@ -1,5 +1,7 @@
 Fun with OpenGL ES
 
+The main module is fungles.c
+
 Note: files 
 esUtil.c, esUtil.h, esUtil_win.h, esUtil_win32.c, esTransform.c
 

@@ -30,6 +30,11 @@ typedef struct Poi{
 	int isEclipsed; // Boolean, true = eclipsed
 	GLfloat dist; // Distance to the camera on last draw
 
+	// Timestamp is made when isEclipsed is changed (for time delay)
+	int lastEclipsed; // Boolean: last value of isEclipsed (for comparison)
+	GLfloat timeStamp; // Cooldown start timestamp
+
+
 
 	// Data set up on Draw to test for occultation (one POI obscuring another)
 	// Corners before transformation

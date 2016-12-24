@@ -19,13 +19,10 @@ typedef struct UserData
 
 	UniformCache uniformCache; // Uniform location cache for the program
 
-					// Model data
-					// Will delete this later
-	VaoObject vao1; // Vertices
-	GLuint tex;  // Texture
+	GLfloat lastTime; // Last time stamp of niceTime;
 
 
-				 // POIs, they include VAOs, textures as needed
+    // POIs, they include VAOs, textures as needed
 	int numPois; // Number of pois
 	
 	Poi pois[USERDATA_MAX_POIS]; // The POIs

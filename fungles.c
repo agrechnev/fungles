@@ -1,5 +1,16 @@
 /* By Oleksiy Grechnyev 2016
-Fun with OpenGL ES */
+Fun with OpenGL ES 
+
+This is my entry point
+
+Note: all relevant data is in the UserData struct
+
+Including the camera position and camera look at point
+
+I put some camera motion here, change/disable if needed
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -50,18 +61,18 @@ void initModel(UserData *userData) {
 	userData->numPois = 3;
 	createPOItexture(&(userData->pois[0]),
 		            0.5f, 0.0f, -0.1f, // X Y Z
-		            1.0f, 1.0f, 10.0f, // width height normDist
+		            1.5f, 1.5f, 10.0f, // width height normDist
 		            pixels, 2, 2);   // texture
 
 	createPOIcolor(&(userData->pois[1]),
 		-0.5f, 0.5f, 2.0f, // X Y Z
-		1.0f, 1.0f, 10.0f, // width height normDist
+		1.5f, 1.5f, 10.0f, // width height normDist
 		1.0f, 0.5f, 0.0f, 1.0f);   // RGBA orange
 
 
 	createPOIcolor(&(userData->pois[2]),
-		1.0f, 1.0f, -4.0f, // X Y Z
-		1.0f, 1.0f, 10.0f, // width height normDist
+		1.0f, 0.5f, -4.0f, // X Y Z
+		1.5f, 1.5f, 10.0f, // width height normDist
 		1.0f, 0.0f, 1.0f, 1.0f);   // RGBA purple
 
 	
@@ -130,6 +141,9 @@ int init(ESContext *esContext) {
 	// Init axes (painted by me)
 	initAxes(userData);
 
+	// Set timestamp
+	userData->lastTime = (GLfloat)clock() / CLOCKS_PER_SEC;
+
 	// Set background color
 	glClearColor(0.5f, 0.5f, 1.0f, 0.0f);
 
@@ -181,10 +195,6 @@ void drawModel(ESContext *esContext) {
 
 	// Use the program object
 	glUseProgram(userData->program);
-
-	// Bind texture
-	glBindTexture(GL_TEXTURE_2D, userData->tex);
-
 
 	// Set up transformations. 
 
@@ -254,6 +264,55 @@ void drawModel(ESContext *esContext) {
 
 //-------------------------------------------
 /*
+ * Move POIs up if eclipsed, down if not (animation)
+ */
+void movePois(UserData *userData, GLfloat niceTime) {
+	// Set up movement step
+	GLfloat step; // In GL coordinate/frame
+	const GLfloat speed=1.5f; // In GL coords/ sec
+	const GLfloat timeDelay = 0.4f; // Time delay before movement is initiated to decrease flicker
+
+	if (niceTime < userData->lastTime) {
+		// If niceTime overflows
+		step = 0.0f;
+	}
+	else {
+		// step based on time elapsed since previous frame
+		// This makes movement speed roughly framerate-independent
+		step = speed * (niceTime - userData->lastTime);
+		// step = 0.1f;
+	}
+
+
+	// Loop over all POIs, move eclipsed up
+	for (int i = 0; i < userData->numPois; i++) {
+		if (userData->pois[i].isEclipsed != userData->pois[i].lastEclipsed) {
+			// Eclipse state changed
+			// Time to set the timestamp
+			userData->pois[i].timeStamp = niceTime;
+			userData->pois[i].lastEclipsed = userData->pois[i].isEclipsed;
+		}
+		else if (niceTime > userData->pois[i].timeStamp + timeDelay || niceTime < userData->pois[i].timeStamp) {
+			// Time delay has passed, move if needed
+
+			if (userData->pois[i].isEclipsed) {
+				// Move up eclipsed POI
+				userData->pois[i].y += step;
+			}
+			else if (userData->pois[i].y > userData->pois[i].origY) {
+				
+					// Move down towards the original Y
+					userData->pois[i].y -= step;
+					if (userData->pois[i].y < userData->pois[i].origY) userData->pois[i].y = userData->pois[i].origY;
+				
+			} //if
+
+		} //if 
+	} // for i
+}
+
+//-------------------------------------------
+/*
  * Draw callback, aka "the game loop body"
  */
 void draw(ESContext *esContext)
@@ -292,6 +351,11 @@ void draw(ESContext *esContext)
 	// Draw model and axes
 	drawModel(esContext);
 
+	// Move POIs
+	movePois(userData, niceTime);
+
+	// Set timestamp
+	userData->lastTime = niceTime;
 }
 
 /////////////////////////////////////////////////////
@@ -301,10 +365,6 @@ void draw(ESContext *esContext)
 void shutdown(ESContext *esContext)
 {
 	UserData *userData = esContext->userData;
-
-	// Clean up our buffers and stuff
-	// Delete VAO
-	deleteVAO(&(userData->vao1));
 
 	// Delete Axes
 	deleteVAO(&(userData->axisVaoX));
